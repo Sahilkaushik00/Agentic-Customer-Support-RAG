@@ -1,0 +1,84 @@
+{
+  "selected_brand": "AmazonHelp",
+  "selection_criterion": "Unique reconstructed customer conversations across the entire Twitter Customer Support (TWCS) corpus",
+  "dataset_overview": {
+    "total_corpus_tweets": 2811774,
+    "total_unique_conversations": 799263,
+    "brand_conversations": 82534,
+    "brand_customer_messages": 203251,
+    "brand_support_messages": 169840
+  },
+  "top_brands_ranking": [
+    {
+      "rank": 1,
+      "brand": "AmazonHelp",
+      "conversations": 82534,
+      "support_tweets": 169840,
+      "selected": true
+    },
+    {
+      "rank": 2,
+      "brand": "AppleSupport",
+      "conversations": 80702,
+      "support_tweets": 106860,
+      "selected": false
+    },
+    {
+      "rank": 3,
+      "brand": "Uber_Support",
+      "conversations": 41923,
+      "support_tweets": 56270,
+      "selected": false
+    },
+    {
+      "rank": 4,
+      "brand": "SpotifyCares",
+      "conversations": 28280,
+      "support_tweets": 43265,
+      "selected": false
+    },
+    {
+      "rank": 5,
+      "brand": "AmericanAir",
+      "conversations": 26385,
+      "support_tweets": 36764,
+      "selected": false
+    },
+    {
+      "rank": 6,
+      "brand": "Delta",
+      "conversations": 26166,
+      "support_tweets": 42253,
+      "selected": false
+    },
+    {
+      "rank": 7,
+      "brand": "comcastcares",
+      "conversations": 24061,
+      "support_tweets": 33031,
+      "selected": false
+    },
+    {
+      "rank": 8,
+      "brand": "TMobileHelp",
+      "conversations": 22789,
+      "support_tweets": 34317,
+      "selected": false
+    },
+    {
+      "rank": 9,
+      "brand": "SouthwestAir",
+      "conversations": 21636,
+      "support_tweets": 28977,
+      "selected": false
+    },
+    {
+      "rank": 10,
+      "brand": "Ask_Spectrum",
+      "conversations": 18530,
+      "support_tweets": 25860,
+      "selected": false
+    }
+  ],
+  "justification": "AmazonHelp has the largest volume of paired customer issues and official company resolutions, providing the richest and most diverse knowledge base for Classical ML intent classification, RAG retrieval grounding, and Human-in-the-Loop decision boundaries."
+}

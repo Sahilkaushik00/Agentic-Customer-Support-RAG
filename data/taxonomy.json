@@ -1,0 +1,116 @@
+{
+  "brand": "AmazonHelp",
+  "dataset": "Customer Support on Twitter (TWCS)",
+  "intents": {
+    "BILLING": {
+      "description": "Financial inquiries, charges, fee disputes, refunds, payment method issues, invoice requests, and Prime subscription renewals.",
+      "subcategories": [
+        "duplicate_charge",
+        "unauthorized_debit",
+        "refund_status",
+        "membership_fee",
+        "tax_dispute",
+        "payment_method"
+      ],
+      "hitl_triggers": [
+        "Disputed charges requiring financial account lookup or debit reversal",
+        "Unauthorized credit card debits or potential payment fraud",
+        "Retroactive multi-month refund requests requiring manager approval",
+        "Off-platform payments to third-party sellers"
+      ],
+      "rag_safe_scenarios": [
+        "Self-service instructions for managing Prime auto-renewal",
+        "Where to download printable PDF invoices or receipts",
+        "General payment method compatibility policies (credit cards, gift cards)",
+        "Standard bank authorization hold duration explanations"
+      ]
+    },
+    "SHIPPING": {
+      "description": "Order delivery tracking, transit delays, delivery instructions, carrier performance, and missing/damaged packages.",
+      "subcategories": [
+        "track_package",
+        "delivery_delay",
+        "missing_delivered",
+        "damaged_in_transit",
+        "driver_conduct",
+        "locker_pickup"
+      ],
+      "hitl_triggers": [
+        "Package marked 'Delivered' but missing after 24h search window (theft / lost parcel replacement)",
+        "Damaged merchandise requiring replacement authorization or inspection",
+        "Severe driver misconduct or property damage claims",
+        "Emergency expedited delivery failure for critical supplies/medication"
+      ],
+      "rag_safe_scenarios": [
+        "Self-service tracking links and carrier transit progress explanation",
+        "Standard residential delivery time windows (8 AM - 8 PM)",
+        "How to add apartment gate codes and delivery instructions",
+        "Amazon Hub Locker pickup rules and holding time limits"
+      ]
+    },
+    "TECHNICAL": {
+      "description": "Hardware, firmware, app software, streaming video/music playback, device resets, and account security/access troubleshooting.",
+      "subcategories": [
+        "fire_tv",
+        "kindle_ereader",
+        "echo_alexa",
+        "prime_video_errors",
+        "app_crash",
+        "security_lockout"
+      ],
+      "hitl_triggers": [
+        "Account security lockout due to suspicious activity (account recovery needed)",
+        "Hardware battery failure, thermal events, or swollen lithium cells (safety emergency)",
+        "Physical screen fracture or hardware failure requiring warranty RMA replacement",
+        "Disappeared library of purchased digital content across years of purchases"
+      ],
+      "rag_safe_scenarios": [
+        "Standard factory reset procedures for Fire TV and Kindle",
+        "Force rebooting a frozen e-reader by holding power for 40 seconds",
+        "Common Prime Video playback error code guidance (5004, 7031)",
+        "Re-pairing Fire TV remote or reconnecting Echo to Wi-Fi"
+      ]
+    },
+    "GENERAL_INQUIRY": {
+      "description": "Corporate policies, returns windows, warranties, trade-in programs, seller inquiries, and customer feedback.",
+      "subcategories": [
+        "return_policy",
+        "warranty_terms",
+        "trade_in",
+        "seller_feedback",
+        "legal_compliance",
+        "customer_complaints"
+      ],
+      "hitl_triggers": [
+        "Service of formal legal process, subpoenas, or litigation notices",
+        "Seller bribery / review manipulation reports requiring Trust & Safety action",
+        "Severe customer harassment or threats from third-party marketplace sellers",
+        "Personal injury / product liability claims caused by defective items"
+      ],
+      "rag_safe_scenarios": [
+        "Standard 30-day and extended holiday return window explanation",
+        "How to contact a third-party marketplace seller via 'Ask a question'",
+        "Amazon Hub / Whole Foods drop-off return procedures",
+        "Opting out of promotional email communications"
+      ]
+    }
+  },
+  "metrics_baseline": {
+    "dataset_size": 200,
+    "class_distribution": {
+      "BILLING": 50,
+      "SHIPPING": 50,
+      "TECHNICAL": 50,
+      "GENERAL_INQUIRY": 50
+    },
+    "complexity_distribution": {
+      "Routine": 104,
+      "Borderline / Ambiguous": 38,
+      "High Stakes Escalation": 58
+    },
+    "routing_split": {
+      "RAG_Safe": 112,
+      "HITL_Required": 88
+    }
+  }
+}
