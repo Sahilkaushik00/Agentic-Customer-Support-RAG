@@ -1,6 +1,6 @@
-# Hiver SDE Intern Assignment — Classical ML + LangGraph HITL Pipeline
+# Classical ML + LangGraph HITL Pipeline
 **Brand Selected:** `@AmazonHelp` (Twitter Customer Support Corpus)  
-**Deliverables Directory:** `/intern_assignment`
+**Core Pipeline:**Customer_Support_Agentic_Pipeline.ipynb ``
 
 An end-to-end, production-grade customer support routing, evaluation, and response pipeline combining a sub-millisecond Classical ML front-door with LangGraph stateful Human-in-the-Loop orchestration and ChromaDB vector retrieval.
 
@@ -11,10 +11,7 @@ An end-to-end, production-grade customer support routing, evaluation, and respon
 You can verify and reproduce the headline benchmark results, baseline comparisons, and LLM-as-a-judge rubric scores in **less than 1 minute** using the automated evaluation harness:
 
 ```bash
-# 1. Navigate to the assignment folder
-cd intern_assignment
-
-# 2. Run the automated evaluation harness (Zero dependencies needed, standard Python 3.8+)
+# 1. Run the automated evaluation harness (Zero dependencies needed, standard Python 3.8+)
 python evaluate.py
 ```
 
@@ -74,7 +71,7 @@ Every deliverable requested by Hiver is fully implemented and documented:
 | # | Required Deliverable | Status | Primary File(s) in `intern_assignment/` |
 | :-: | :--- | :-: | :--- |
 | **1** | **Runnable Pipeline & 15-min Reproducibility** | **Complete** | `README.md`, `pipeline.py`, `app.py`, `requirements.txt` |
-| **2** | **Golden Evaluation Set (150–250 hand-labelled items)** | **Complete** | `data/golden_set_200.json`, `data/golden_set_200.csv`, `SAMPLING_AND_LABELING_NOTE.md` |
+| **2** | **Golden Evaluation Set (150–250 hand-labelled items)** | **Complete** | `golden_set_200.json`, `golden_set_200.csv`, 
 | **3** | **Evaluation Harness (Metrics + LLM Judge + Human Agreement)** | **Complete** | `evaluate.py`, `evaluation_results.json` |
 | **4** | **Comprehensive Technical Report (Max 6 pages)** | **Complete** | `REPORT.md` (and Web UI Report Dashboard) |
 | **5** | **Decision Log (10–15 Non-Obvious Decisions)** | **Complete** | `DECISION_LOG.md` (14 detailed decisions) |
@@ -157,19 +154,3 @@ python pipeline.py
 
 ---
 
-## 🌐 Free Live Web Hosting Deployment Options
-
-### Option A: Streamlit Community Cloud (100% Free)
-1. Fork or push this repository to GitHub.
-2. Visit [share.streamlit.io](https://share.streamlit.io) and connect your GitHub account.
-3. Select your repository, set the file path to `intern_assignment/app.py`.
-4. Under **Advanced Settings > Secrets**, paste:
-   ```toml
-   GOOGLE_API_KEY = "your-api-key"
-   ```
-5. Click **Deploy**. Your app is live with a permanent HTTPS link.
-
-### Option B: Hugging Face Spaces (100% Free)
-1. Create a new Space on [huggingface.co/spaces](https://huggingface.co/spaces).
-2. Choose **Streamlit** SDK.
-3. Upload `intern_assignment/` files and set your `GOOGLE_API_KEY` under Space Settings.
