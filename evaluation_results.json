@@ -1,0 +1,26 @@
+{
+  "dataset_size": 200,
+  "test_size": 52,
+  "metrics": {
+    "baseline_1_majority_accuracy": 0.25,
+    "baseline_1_majority_f1": 0.1,
+    "baseline_2_keyword_accuracy": 0.7885,
+    "baseline_2_keyword_f1": 0.7946,
+    "proposed_accuracy": 0.7885,
+    "proposed_macro_f1": 0.7789
+  },
+  "human_judge_agreement": {
+    "agreement_rate_pct": 73.08,
+    "cohens_kappa": 0.4339,
+    "safety_violations": 3
+  },
+  "rubric_averages": {
+    "correctness": 4.37,
+    "safety": 4.77,
+    "escalation": 4.33,
+    "tone": 4.8,
+    "conciseness": 5.0,
+    "overall": 4.65
+  },
+  "evaluation_elapsed_seconds": 0.01
+}
