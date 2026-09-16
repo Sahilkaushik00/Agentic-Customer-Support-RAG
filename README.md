@@ -71,7 +71,7 @@ Every deliverable requested by Hiver is fully implemented and documented:
 | # | Required Deliverable | Status | Primary File(s) in `intern_assignment/` |
 | :-: | :--- | :-: | :--- |
 | **1** | **Runnable Pipeline & 15-min Reproducibility** | **Complete** | `README.md`, `pipeline.py`, `app.py`, `requirements.txt` |
-| **2** | **Golden Evaluation Set (150–250 hand-labelled items)** | **Complete** | `golden_set_200.json`, `golden_set_200.csv`, 
+| **2** | **Golden Evaluation Set (150–250 hand-labelled items)** | **Complete** | `data/golden_set_200.json`, `data/golden_set_200.csv`, 
 | **3** | **Evaluation Harness (Metrics + LLM Judge + Human Agreement)** | **Complete** | `evaluate.py`, `evaluation_results.json` |
 | **4** | **Comprehensive Technical Report (Max 6 pages)** | **Complete** | `REPORT.md` (and Web UI Report Dashboard) |
 | **5** | **Decision Log (10–15 Non-Obvious Decisions)** | **Complete** | `DECISION_LOG.md` (14 detailed decisions) |
