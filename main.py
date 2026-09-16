@@ -30,7 +30,7 @@ with st.sidebar:
     st.success("AmazonHelp")
     st.write("Classical ML → LLM Judge → RAG / HITL")
     st.divider()
-    st.write("The core logic is implemented in `pipeline.py`. This Streamlit layer provides the interactive UI.")
+    st.write("The core logic is implemented in `Customer_Support_Agentic_Pipeline.ipynb`. This Streamlit layer provides the interactive UI.")
 
 if "thread_id" not in st.session_state:
     st.session_state.thread_id = f"streamlit-{uuid.uuid4().hex}"
