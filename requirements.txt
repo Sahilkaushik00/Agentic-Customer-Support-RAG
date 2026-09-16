@@ -1,0 +1,8 @@
+streamlit>=1.39
+numpy>=1.26
+pandas>=2.2
+scikit-learn>=1.5
+pydantic>=2.8
+langchain-google-genai>=2.1
+langchain-core>=0.3
+langgraph>=0.6
