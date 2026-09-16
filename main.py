@@ -23,7 +23,7 @@ def load_core():
 core = load_core()
 
 st.title("AmazonHelp Support AI")
-st.caption("Hiver SDE Intern — Classical ML + RAG + LangGraph HITL")
+st.caption("Classical ML + RAG + LangGraph HITL (see the jupyter notebook(Customer_Support_Agentic_Pipeline.ipynb) for the full implementation)")
 
 with st.sidebar:
     st.subheader("System")
@@ -136,4 +136,4 @@ if result:
                 st.write(result["judge_reason"])
 
 st.divider()
-st.caption("Demo UI around the supplied core pipeline. For the Hiver evaluation submission, keep the notebook/evaluation artifacts separate from this Streamlit demo.")
+st.caption("Demo UI around the supplied core pipeline.keep the notebook/evaluation artifacts separate from this Streamlit demo.")
