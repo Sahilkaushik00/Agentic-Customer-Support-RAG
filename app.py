@@ -185,7 +185,7 @@ if menu == "🚀 Live Pipeline Playground":
                     if bcol3.button("❌ Reject / Spam"):
                         st.error("Ticket flagged as invalid.")
 
-------------------------------------------------------------------
+#------------------------------------------------------------------
 # VIEW 2: Golden Benchmark Explorer (200)
 # -------------------------------------------------------------------
 elif menu == "📊 Golden Benchmark Explorer (200)":
