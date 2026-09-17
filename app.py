@@ -224,11 +224,20 @@ elif menu == "📊 Golden Benchmark Explorer (200)":
         # Keep only the columns that actually exist in the loaded JSON
         existing_columns = [col for col in desired_columns if col in filtered_df.columns]
         
-        st.dataframe(
-            filtered_df[existing_columns],
-            use_container_width=True,
-            hide_index=True
-        )  )
+       # First define the columns safely outside the function call
+    safe_columns = [
+        col for col in [
+            "id", "customer_query", "user_text", "true_intent", "intent", 
+            "complexity", "requires_hitl", "hitl_reason"
+        ] if col in filtered_df.columns
+    ]
+
+    # Then pass the safe columns to st.dataframe
+    st.dataframe(
+        filtered_df[safe_columns],
+        use_container_width=True,
+        height=450
+    )  )
 
 # filtered_df[["id", "customer_query", "true_intent", "complexity", "requires_hitl", "hitl_reason"]],
         # use_container_width=True,
