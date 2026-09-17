@@ -18,7 +18,7 @@ import json
 import math
 from pathlib import Path
 from typing import TypedDict, Literal, Optional, Any, List, Dict
-
+from sklearn.linear_model import LogisticRegression
 try:
     import numpy as np
 except ImportError:
@@ -401,9 +401,6 @@ if SKLEARN_AVAILABLE:
         random_state=42,
         stratify=merged['intent'] if can_stratify else None
     )
-
-from sklearn.linear_model import LogisticRegression
-
     classifier = Pipeline([
         ('tfidf', TfidfVectorizer(
             ngram_range=(1, 2),
