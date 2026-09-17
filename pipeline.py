@@ -195,14 +195,12 @@ except ImportError:
             state = dict(saved.get("state", {}))
 
             if isinstance(input_data, Command):
-                # Resuming from interrupt
                 resume_payload = input_data.resume
                 state.update(resume_payload)
                 curr = saved.get("next", (None,))[0] if saved.get("next") else None
                 saved["next"] = ()
                 saved["pending_interrupt"] = None
 
-                # Execute HITL node with resumed input
                 if curr == "hitl":
                     human_response = resume_payload.get("human_response", "")
                     state["human_response"] = human_response
@@ -215,7 +213,6 @@ except ImportError:
                 state.update(input_data)
                 curr = self.graph.entry_point
 
-            # Graph execution loop
             while curr and curr != END:
                 node_fn = self.graph.nodes[curr]
                 try:
@@ -223,14 +220,12 @@ except ImportError:
                     if update:
                         state.update(update)
                 except InterruptException as e:
-                    # Record pause state
                     saved["state"] = state
                     saved["next"] = (curr,)
                     saved["pending_interrupt"] = e.value
                     self.checkpointer.put(thread_id, saved)
                     return state
 
-                # Route to next node
                 if curr in self.graph.conditional_edges:
                     cond_fn, edge_map = self.graph.conditional_edges[curr]
                     decision = cond_fn(state)
@@ -247,6 +242,13 @@ except ImportError:
 # =====================================================================
 # 2. DATASET PREPARATION & HEURISTIC INTENT MAPPING
 # =====================================================================
+def clean_text(text: str) -> str:
+    """Strip handles, excess whitespace, and urls for cleaner text representation."""
+    t = re.sub(r'^@\w+\s+', '', str(text))
+    t = re.sub(r'https?://\S+', '', t)
+    t = re.sub(r'\s+', ' ', t).strip()
+    return t
+
 def assign_intent(text: str) -> str:
     """Heuristic pseudo-labels for training the classifier (as specified in notebook)."""
     text = str(text).lower()
@@ -259,16 +261,19 @@ def assign_intent(text: str) -> str:
     return 'GENERAL_INQUIRY'
 
 def load_data() -> pd.DataFrame:
-    """Loads amazonhelp_brand_conversations.csv.gz for training or falls back to samples."""
+    """Loads dataset dynamically from root or data folder with multi-key resolution."""
     base_dir = Path(__file__).resolve().parent
-    primary_dataset = base_dir / "data" / "amazonhelp_brand_conversations.csv.gz"
-    if not primary_dataset.exists():
-        primary_dataset = Path("data/amazonhelp_brand_conversations.csv.gz")
-    
-    if primary_dataset.exists():
+    primary_candidates = [
+        base_dir / "data" / "amazonhelp_brand_conversations.csv.gz",
+        base_dir / "amazonhelp_brand_conversations.csv.gz",
+        Path("data/amazonhelp_brand_conversations.csv.gz"),
+        Path("amazonhelp_brand_conversations.csv.gz")
+    ]
+    primary_dataset = next((p for p in primary_candidates if p.exists()), None)
+
+    if primary_dataset:
         if len(sys.argv) <= 1: print(f"Loading primary dataset from {primary_dataset}...")
         df = pd.read_csv(primary_dataset)
-        
         inbound = df[df['inbound'] == True].copy()
         outbound = df[df['inbound'] == False].copy()
         merged = pd.merge(inbound, outbound, left_on='tweet_id', right_on='in_response_to_tweet_id', suffixes=('_user', '_company'))
@@ -276,60 +281,91 @@ def load_data() -> pd.DataFrame:
         merged['company_response'] = merged['text_company'].str.replace(r'^@\w+\s+', '', regex=True)
         merged['intent'] = merged['user_text'].apply(assign_intent)
         return merged
-        
+
     if len(sys.argv) <= 1: print("Primary dataset not found. Falling back to golden/sample data...")
     candidates = [
-        base_dir / "data" / "golden_set_200.json",
         base_dir / "golden_set_200.json",
-        Path("data/golden_set_200.json"),
+        base_dir / "data" / "golden_set_200.json",
         Path("golden_set_200.json"),
+        Path("data/golden_set_200.json"),
+        Path("../golden_set_200.json"),
         Path("../data/golden_set_200.json")
     ]
     data_file = next((p for p in candidates if p.exists()), None)
-    
+
     records = []
-    if data_file:
-        with open(data_file, "r", encoding="utf-8") as f:
-            raw = json.load(f)
-        for item in raw:
-            records.append({
-                "user_text": item.get("customer_query", ""),
-                "company_response": item.get("gold_response", "We'd like to take a further look into this with you! Please connect with us here: https://amazon.com/help ^SH"),
-                "intent": item.get("true_intent") or assign_intent(item.get("customer_query", ""))
-            })
-    else:
+    if data_file and data_file.stat().st_size > 10:
+        try:
+            with open(data_file, "r", encoding="utf-8") as f:
+                raw = json.load(f)
+            for item in raw:
+                user_txt = item.get("customer_query") or item.get("user_text") or item.get("customer_text") or item.get("text") or item.get("query") or ""
+                user_txt = clean_text(str(user_txt))
+                if not user_txt:
+                    continue
+                resp_txt = item.get("historical_response") or item.get("company_response") or item.get("support_response") or item.get("gold_response") or ""
+                intent_val = item.get("true_intent") or item.get("intent") or assign_intent(user_txt)
+                records.append({
+                    "user_text": user_txt,
+                    "company_response": str(resp_txt),
+                    "intent": str(intent_val)
+                })
+        except Exception as e:
+            if len(sys.argv) <= 1: print(f"Error loading {data_file}: {e}")
+
+    if not records:
         sample_candidates = [
+            base_dir / "sample_amazonhelp_pairs.json",
             base_dir / "data" / "sample_amazonhelp_pairs.json",
+            Path("sample_amazonhelp_pairs.json"),
             Path("data/sample_amazonhelp_pairs.json"),
             Path("../data/sample_amazonhelp_pairs.json")
         ]
         sample_file = next((p for p in sample_candidates if p.exists()), None)
-        if sample_file:
-            with open(sample_file, "r", encoding="utf-8") as f:
-                raw = json.load(f)
-            for item in raw:
-                records.append({
-                    "user_text": item.get("customer_text", ""),
-                    "company_response": item.get("support_response", ""),
-                    "intent": item.get("intent") or assign_intent(item.get("customer_text", ""))
-                })
-        else:
-            records = [
-                {"user_text": "Where is my package? I want to track my delivery.", "company_response": "We would be happy to help! You can track your package and view your delivery status here: https://t.co/eVyTqezdQ0", "intent": "SHIPPING"},
-                {"user_text": "My package says delivered but it is not here.", "company_response": "Please check with household members and around your property, or reach out to us: https://amazon.com/help ^AM", "intent": "SHIPPING"},
-                {"user_text": "Tracking hasn't updated in 3 days for my order.", "company_response": "Carrier scans can take 24-48 hours. You can see tracking details in Your Orders: https://amazon.com/orders ^SH", "intent": "SHIPPING"},
-                {"user_text": "I was charged twice on my card this month, help!", "company_response": "I'm sorry! What form of payment did you use (i.e. credit, debit, gift card)? Is the charge pending or posted to your acct? ^SH", "intent": "BILLING"},
-                {"user_text": "Unauthorized charge on my statement from Amazon.", "company_response": "We take unauthorized charges seriously. Please report this to our billing team: https://amazon.com/help/contact ^AM", "intent": "BILLING"},
-                {"user_text": "I need a refund for a returned item.", "company_response": "Refunds usually process within 3-5 business days after receipt. Check status: https://amazon.com/returns ^RG", "intent": "BILLING"},
-                {"user_text": "My Fire Stick keeps crashing when I open Prime Video.", "company_response": "We'd like to help with your Fire Stick! Please try clearing the Prime Video app cache from Settings. ^AM", "intent": "TECHNICAL"},
-                {"user_text": "Kindle won't connect to Wi-Fi network.", "company_response": "Try restarting your Kindle and your Wi-Fi router. More steps: https://amazon.com/devicesupport ^SH", "intent": "TECHNICAL"},
-                {"user_text": "App shows error code 5004 on smart TV.", "company_response": "Error 5004 relates to sign-in credentials. Please re-authenticate at amazon.com/mytv ^RG", "intent": "TECHNICAL"},
-                {"user_text": "What is the holiday return policy window?", "company_response": "Items shipped between Nov 1 and Dec 31 can be returned until Jan 31! ^AM", "intent": "GENERAL_INQUIRY"},
-                {"user_text": "How do I update my shipping address for future orders?", "company_response": "You can add or modify your addresses under Your Account > Your Addresses: https://amazon.com/addresses ^SH", "intent": "GENERAL_INQUIRY"},
-                {"user_text": "Can I trade in my old Echo device for credit?", "company_response": "Yes! Learn more about the Amazon Trade-In Program here: https://amazon.com/tradein ^AM", "intent": "GENERAL_INQUIRY"}
-            ]
+        if sample_file and sample_file.stat().st_size > 10:
+            try:
+                with open(sample_file, "r", encoding="utf-8") as f:
+                    raw = json.load(f)
+                for item in raw:
+                    user_txt = item.get("user_text") or item.get("customer_query") or item.get("customer_text") or item.get("text") or item.get("query") or ""
+                    user_txt = clean_text(str(user_txt))
+                    if not user_txt:
+                        continue
+                    resp_txt = item.get("company_response") or item.get("historical_response") or item.get("support_response") or ""
+                    intent_val = item.get("intent") or item.get("true_intent") or assign_intent(user_txt)
+                    records.append({
+                        "user_text": user_txt,
+                        "company_response": str(resp_txt),
+                        "intent": str(intent_val)
+                    })
+            except Exception as e:
+                if len(sys.argv) <= 1: print(f"Error loading {sample_file}: {e}")
+
+    # Guaranteed multi-sample fallback
+    if len(records) < 4:
+        records = [
+            {"user_text": "Where is my package? I want to track my delivery status online.", "company_response": "We would be happy to help! You can track your package and view your delivery status here: https://t.co/eVyTqezdQ0", "intent": "SHIPPING"},
+            {"user_text": "Where is my package? I want to track my delivery.", "company_response": "We would be happy to help! You can track your package and view your delivery status here: https://t.co/eVyTqezdQ0", "intent": "SHIPPING"},
+            {"user_text": "My package says delivered but it is not here.", "company_response": "Please check with household members and around your property, or reach out to us: https://amazon.com/help ^AM", "intent": "SHIPPING"},
+            {"user_text": "Tracking hasn't updated in 3 days for my order.", "company_response": "Carrier scans can take 24-48 hours. You can see tracking details in Your Orders: https://amazon.com/orders ^SH", "intent": "SHIPPING"},
+            {"user_text": "I was charged twice on my card this month, help!", "company_response": "I'm sorry! What form of payment did you use (i.e. credit, debit, gift card)? Is the charge pending or posted to your acct? ^SH", "intent": "BILLING"},
+            {"user_text": "Why is there an unauthorized fee on my account?", "company_response": "We'd like to check this charge for you. Please reach out to us through our secure contact portal: https://amazon.com/help ^AM", "intent": "BILLING"},
+            {"user_text": "I need a refund for my damaged returned item.", "company_response": "Refunds typically process within 3-5 business days of receipt. Check return status here: https://amazon.com/returns ^SH", "intent": "BILLING"},
+            {"user_text": "My Fire Stick keeps crashing when I open Prime Video.", "company_response": "We'd like to help with your Fire Stick! Please try clearing the Prime Video app cache from Settings. ^AM", "intent": "TECHNICAL"},
+            {"user_text": "Kindle screen is frozen and won't turn on.", "company_response": "Hold the power button down for a full 40 seconds to force restart your Kindle device. ^SH", "intent": "TECHNICAL"},
+            {"user_text": "Echo Dot keeps showing red ring and error code 7.", "company_response": "A red ring means microphone is muted. If error persists, unplug for 30s and reconnect to Wi-Fi via Alexa app. ^AM", "intent": "TECHNICAL"},
+            {"user_text": "What is the holiday return policy window?", "company_response": "Items shipped between Nov 1 and Dec 31 can be returned until Jan 31! ^AM", "intent": "GENERAL_INQUIRY"},
+            {"user_text": "How do I update my shipping address for future orders?", "company_response": "You can add or modify your addresses under Your Account > Your Addresses: https://amazon.com/addresses ^SH", "intent": "GENERAL_INQUIRY"},
+            {"user_text": "Can I trade in my old Echo device for credit?", "company_response": "Yes! Learn more about the Amazon Trade-In Program here: https://amazon.com/tradein ^AM", "intent": "GENERAL_INQUIRY"}
+        ]
+
+    for r in records:
+        txt = clean_text(str(r.get("user_text", "")))
+        r["user_text"] = txt if len(txt) > 2 else "customer inquiry regarding order and support"
 
     merged = pd.DataFrame(records)
+    if len(sys.argv) <= 1:
+        print(f"Loaded {len(merged)} records for training and validation.")
     return merged
 
 # =====================================================================
@@ -352,54 +388,51 @@ class FallbackClassifier:
             probs.append(p)
         return np.array(probs)
 
+classes = ['BILLING', 'GENERAL_INQUIRY', 'SHIPPING', 'TECHNICAL']
+
 if SKLEARN_AVAILABLE:
     classes = sorted(merged['intent'].unique())
-    # Safely verify if stratification is possible:
-    # requires each class to have >= 2 instances and overall sample size >= 10
-    counts = merged['intent'].value_counts() if hasattr(merged['intent'], 'value_counts') else {}
-    can_stratify = len(counts) > 1 and min(counts.values) >= 2 and len(merged) >= 10
+    counts = merged['intent'].value_counts()
+    can_stratify = (len(merged) >= 20) and (counts.min() >= 2)
 
-    try:
-        if can_stratify:
-            X_train, X_val, y_train, y_val = train_test_split(
-                merged['user_text'],
-                merged['intent'],
-                test_size=0.2,
-                random_state=42,
-                stratify=merged['intent']
-            )
-        elif len(merged) >= 4:
-            X_train, X_val, y_train, y_val = train_test_split(
-                merged['user_text'],
-                merged['intent'],
-                test_size=0.2,
-                random_state=42
-            )
-        else:
-            X_train, X_val, y_train, y_val = merged['user_text'], merged['user_text'], merged['intent'], merged['intent']
-    except Exception:
-        X_train, X_val, y_train, y_val = merged['user_text'], merged['user_text'], merged['intent'], merged['intent']
+    X_train, X_val, y_train, y_val = train_test_split(
+        merged['user_text'],
+        merged['intent'],
+        test_size=0.2,
+        random_state=42,
+        stratify=merged['intent'] if can_stratify else None
+    )
 
     classifier = Pipeline([
         ('tfidf', TfidfVectorizer(
             ngram_range=(1, 2),
-            max_features=5000
+            max_features=5000,
+            min_df=1,
+            token_pattern=r"(?u)\b\w+\b",
+            sublinear_tf=True
         )),
         ('clf', LogisticRegression(
             max_iter=1000,
             class_weight='balanced'
         ))
     ])
-    classifier.fit(X_train, y_train)
+    try:
+        classifier.fit(X_train, y_train)
+    except Exception as e:
+        if len(sys.argv) <= 1: print(f"Classifier fitting fallback triggered: {e}")
+        classifier = FallbackClassifier(classes)
+
     val_predictions = classifier.predict(X_val)
+    val_probabilities = classifier.predict_proba(X_val)
     if len(sys.argv) <= 1:
         print("Classifier trained.")
         print("\nClassification Validation Results")
         print("=" * 50)
         print("Accuracy :", accuracy_score(y_val, val_predictions))
         print("Macro F1 :", f1_score(y_val, val_predictions, average='macro'))
+        print("\nClassification Report:")
+        print(classification_report(y_val, val_predictions))
 else:
-    classes = ['BILLING', 'GENERAL_INQUIRY', 'SHIPPING', 'TECHNICAL']
     classifier = FallbackClassifier(classes)
     if len(sys.argv) <= 1: print("Classifier trained (calibrated fallback mode).")
 
@@ -412,22 +445,17 @@ def validate_ml_output(text: str, confidence_threshold: float = 0.60, margin_thr
     This will later be passed to the LLM Judge.
     """
     probabilities = classifier.predict_proba([text])[0]
-    classes = classifier.classes_
+    cls_list = list(classifier.classes_)
 
-    # Sort probabilities
     ranked = probabilities.argsort()[::-1]
-
     top1_idx = ranked[0]
     top2_idx = ranked[1] if len(ranked) > 1 else ranked[0]
 
-    predicted_intent = classes[top1_idx]
+    predicted_intent = cls_list[top1_idx]
     confidence = float(probabilities[top1_idx])
     second_confidence = float(probabilities[top2_idx])
-
-    # Difference between best and second-best class
     margin = confidence - second_confidence
 
-    # Entropy = uncertainty across all classes
     entropy = float(
         -(probabilities * np.log(probabilities + 1e-12)).sum()
     )
@@ -445,7 +473,7 @@ def validate_ml_output(text: str, confidence_threshold: float = 0.60, margin_thr
         "is_uncertain": is_uncertain,
         "probabilities": {
             cls: float(prob)
-            for cls, prob in zip(classes, probabilities)
+            for cls, prob in zip(cls_list, probabilities)
         }
     }
 
@@ -461,7 +489,7 @@ class SimpleRetriever:
         q_lower = query.lower()
         scores = []
         for _, row in self.df.iterrows():
-            text = row['user_text'].lower()
+            text = str(row['user_text']).lower()
             score = 0.0
             for word in q_lower.split():
                 if len(word) > 2 and word in text:
@@ -481,10 +509,6 @@ class SimpleRetriever:
 retriever = SimpleRetriever(merged)
 
 def validate_retrieval(query: str, k: int = 3, min_relevant_docs: int = 2, min_score: float = 0.50):
-    """
-    Retrieves top-k documents and checks whether
-    enough relevant historical evidence exists.
-    """
     docs = retriever.invoke(query, k=k)
     return {
         "retrieval_status": "GOOD",
@@ -518,9 +542,7 @@ class JudgeDecision(BaseModel):
     decision: Literal["RAG_VALID", "HITL"]
     reason: str
 
-# LLM setup (ChatGoogleGenerativeAI with graceful deterministic fallback)
 class MockLLM:
-    """Deterministic LLM for testing & fallback when API keys are absent."""
     def with_structured_output(self, schema):
         return self
 
@@ -531,7 +553,6 @@ class MockLLM:
                 content = "We would be happy to help! You can track your package and view your delivery status here: https://t.co/eVyTqezdQ0"
             return MockText()
 
-        # Extract Customer Query line specifically to avoid matching prompt instructions
         cq_match = re.search(r"Customer Query:\s*(.*?)\n\s*Predicted Intent:", prompt, re.DOTALL | re.IGNORECASE)
         q_text = cq_match.group(1).strip().lower() if cq_match else p
 
@@ -546,7 +567,6 @@ class MockLLM:
             reason="The customer request is a routine query that can be safely answered using verified historical support knowledge."
         )
 
-# Check if Google GenAI is configured
 if os.environ.get("GOOGLE_API_KEY") and LANGGRAPH_AVAILABLE:
     try:
         real_llm = ChatGoogleGenerativeAI(model="gemini-3.6-flash", temperature=0)
@@ -648,7 +668,6 @@ Do not claim that an action has been performed.
     }
 
 def hitl_fallback(state: AgentState):
-    # Pause the graph and ask the human for the actual response.
     human_input = interrupt({
         "type": "human_response_required",
         "message": "Please provide the final response to the customer.",
@@ -662,7 +681,6 @@ def hitl_fallback(state: AgentState):
         )
     })
 
-    # Graph resumes here after Command(resume=...)
     human_response = human_input["human_response"]
 
     return {
@@ -726,29 +744,24 @@ def run_pipeline():
         print(f"User: {q}")
         print(f"Thread ID: {thread_id}")
 
-        # First invocation
         result = app.invoke(
             {"query": q},
             config=config
         )
 
-        # Check whether the graph paused at an interrupt
         snapshot = app.get_state(config)
 
         if snapshot.next:
             print("\nGraph paused for HITL.")
             print("Next node:", snapshot.next)
 
-            # The interrupt payload is available in the task information
             interrupt_info = snapshot.tasks[0].interrupts[0]
 
             print("\nHuman is shown:")
             print(interrupt_info.value)
 
-            # Simulate the human response
             default_resp = "Hi, I'm sorry about the duplicate charge. I've escalated this to our billing team for review. They will verify the transaction and assist with the refund process."
             try:
-                # If non-interactive, use default simulated response
                 if os.environ.get("CI") or not os.isatty(0):
                     print(f"\nEnter the human's final response:  {default_resp}")
                     human_response = default_resp
@@ -759,7 +772,6 @@ def run_pipeline():
             except Exception:
                 human_response = default_resp
 
-            # Resume the SAME checkpoint/thread
             result = app.invoke(
                 Command(
                     resume={
@@ -769,14 +781,12 @@ def run_pipeline():
                 config=config
             )
 
-        # Final result
         print("\nFinal State")
         print("-" * 40)
         print("Intent:", result.get("predicted_intent"))
         print("Judge Decision:", result.get("judge_decision"))
         print("Final Response:", result.get("final_response"))
 
-        # Show final checkpoint
         final_snapshot = app.get_state(config)
 
         print("\nCheckpoint State")
@@ -785,10 +795,8 @@ def run_pipeline():
         print("Next:", final_snapshot.next)
 
 if __name__ == "__main__":
-    import sys
     if len(sys.argv) > 1:
         query = sys.argv[1]
-        
         config = {"configurable": {"thread_id": "api_user_1"}}
         result = app.invoke({"query": query}, config=config)
         
@@ -802,7 +810,6 @@ if __name__ == "__main__":
             interrupt_info = snapshot.tasks[0].interrupts[0].value
             hitl_reason = interrupt_info.get("judge_reason", "")
             historical_response = interrupt_info.get("historical_response", "")
-            # We don't resume here for the simple API, we just report it needs HITL
         
         output = {
             "query": query,
