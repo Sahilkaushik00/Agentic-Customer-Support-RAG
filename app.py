@@ -185,8 +185,8 @@ if menu == "🚀 Live Pipeline Playground":
                     if bcol3.button("❌ Reject / Spam"):
                         st.error("Ticket flagged as invalid.")
 
-# -------------------------------------------------------------------
-# VIEW 2: Golden Benchmark Explorer
+------------------------------------------------------------------
+# VIEW 2: Golden Benchmark Explorer (200)
 # -------------------------------------------------------------------
 elif menu == "📊 Golden Benchmark Explorer (200)":
     st.title("📊 Golden Benchmark Dataset Explorer")
@@ -197,24 +197,7 @@ elif menu == "📊 Golden Benchmark Explorer (200)":
 
     df_golden = pd.DataFrame(golden_data)
 
-    # fcol1, fcol2, fcol3 = st.columns(3)
-    # with fcol1:
-    #     intent_filter = st.selectbox("Filter Intent:", ["ALL"] + list(df_golden["true_intent"].unique()))
-    # with fcol2:
-    #     complexity_filter = st.selectbox("Filter Complexity:", ["ALL"] + list(df_golden["complexity"].unique()))
-    # with fcol3:
-    #     hitl_filter = st.selectbox("Requires HITL:", ["ALL", "True", "False"])
-
-    # filtered_df = df_golden.copy()
-    # if intent_filter != "ALL":
-    #     filtered_df = filtered_df[filtered_df["true_intent"] == intent_filter]
-    # if complexity_filter != "ALL":
-    #     filtered_df = filtered_df[filtered_df["complexity"] == complexity_filter]
-    # if hitl_filter != "ALL":
-    #     val = (hitl_filter == "True")
-    #     filtered_df = filtered_df[filtered_df["requires_hitl"] == val]
-
-    # 1. Safe filter options (check if column exists before calling .unique())
+    # Safe filter options
     intent_options = ["ALL"] + (list(df_golden["true_intent"].dropna().unique()) if "true_intent" in df_golden.columns else (list(df_golden["intent"].dropna().unique()) if "intent" in df_golden.columns else []))
     complexity_options = ["ALL"] + (list(df_golden["complexity"].dropna().unique()) if "complexity" in df_golden.columns else [])
     
@@ -227,56 +210,36 @@ elif menu == "📊 Golden Benchmark Explorer (200)":
         hitl_filter = st.selectbox("Requires HITL:", ["ALL", "True", "False"])
 
     filtered_df = df_golden.copy()
-
-    # 2. Safe intent filtering
     if intent_filter != "ALL":
         col_to_filter = "true_intent" if "true_intent" in filtered_df.columns else "intent"
         if col_to_filter in filtered_df.columns:
             filtered_df = filtered_df[filtered_df[col_to_filter] == intent_filter]
-
-    # 3. Safe complexity filtering
     if complexity_filter != "ALL" and "complexity" in filtered_df.columns:
         filtered_df = filtered_df[filtered_df["complexity"] == complexity_filter]
-
-    # 4. Safe HITL filtering (handles both boolean True/False and string "true"/"false")
     if hitl_filter != "ALL":
         target_col = "requires_hitl" if "requires_hitl" in filtered_df.columns else ("is_hitl" if "is_hitl" in filtered_df.columns else None)
         if target_col:
             val_bool = (hitl_filter == "True")
-            # Matches True/False as boolean, or "True"/"False" as text
             filtered_df = filtered_df[
                 (filtered_df[target_col] == val_bool) | 
                 (filtered_df[target_col].astype(str).str.lower() == hitl_filter.lower())
             ]
 
     st.write(f"Displaying **{len(filtered_df)}** of 200 items:")
-    st.dataframe(
-        desired_columns = [
-            "id", "customer_query", "user_text", "true_intent", "intent", 
-            "complexity", "requires_hitl", "hitl_reason", "risk_category", 
-            "gold_action", "historical_response", "company_response",
-        ],
-        # Keep only the columns that actually exist in the loaded JSON
-        existing_columns = [col for col in desired_columns if col in filtered_df.columns],
-        
-       # First define the columns safely outside the function call
+    
+    # Keep only columns that exist
     safe_columns = [
         col for col in [
             "id", "customer_query", "user_text", "true_intent", "intent", 
-            "complexity", "requires_hitl", "hitl_reason"
+            "complexity", "requires_hitl", "hitl_reason", "risk_category", "gold_action"
         ] if col in filtered_df.columns
     ]
 
-    # Then pass the safe columns to st.dataframe
-    ,st.dataframe(
+    st.dataframe(
         filtered_df[safe_columns],
         use_container_width=True,
         height=450
-    )  )
-
-# filtered_df[["id", "customer_query", "true_intent", "complexity", "requires_hitl", "hitl_reason"]],
-        # use_container_width=True,
-        # height=450
+    )
 
     # Export Buttons
     ecol1, ecol2 = st.columns(2)
