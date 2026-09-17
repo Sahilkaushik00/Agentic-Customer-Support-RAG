@@ -464,18 +464,20 @@ def validate_ml_output(text: str, confidence_threshold: float = 0.60, margin_thr
         confidence < confidence_threshold
         or margin < margin_threshold
     )
-
     return {
         "intent": predicted_intent,
         "confidence": confidence,
         "margin": margin,
         "entropy": entropy,
         "is_uncertain": is_uncertain,
+        "probs": [float(p) for p in probabilities],
+        "classes": list(cls_list),
         "probabilities": {
             cls: float(prob)
             for cls, prob in zip(cls_list, probabilities)
         }
     }
+   
 
 # =====================================================================
 # 5. RAG RETRIEVER & RETRIEVAL VALIDATION
