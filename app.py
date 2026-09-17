@@ -251,11 +251,11 @@ elif menu == "📊 Golden Benchmark Explorer (200)":
 
     st.write(f"Displaying **{len(filtered_df)}** of 200 items:")
     st.dataframe(
-        desired_columns = [
-            "id", "customer_query", "user_text", "true_intent", "intent", 
-            "complexity", "requires_hitl", "hitl_reason", "risk_category", 
-            "gold_action", "historical_response", "company_response",
-        ]
+        # desired_columns = [
+        #     "id", "customer_query", "user_text", "true_intent", "intent", 
+        #     "complexity", "requires_hitl", "hitl_reason", "risk_category", 
+        #     "gold_action", "historical_response", "company_response",
+        # ]
         # Keep only the columns that actually exist in the loaded JSON
         existing_columns = [col for col in desired_columns if col in filtered_df.columns]
         
