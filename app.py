@@ -228,11 +228,11 @@ elif menu == "📊 Golden Benchmark Explorer (200)":
             filtered_df[existing_columns],
             use_container_width=True,
             hide_index=True
-        )
-        # filtered_df[["id", "customer_query", "true_intent", "complexity", "requires_hitl", "hitl_reason"]],
+        )  )
+
+# filtered_df[["id", "customer_query", "true_intent", "complexity", "requires_hitl", "hitl_reason"]],
         # use_container_width=True,
         # height=450
-    )
 
     # Export Buttons
     ecol1, ecol2 = st.columns(2)
