@@ -336,19 +336,19 @@ class FallbackClassifier:
 
 if SKLEARN_AVAILABLE:
     classes = sorted(merged['intent'].unique())
-   stratify = (
+    stratify = (
     merged["intent"]
     if merged["intent"].value_counts().min() >= 2
     else None
-)
-
-X_train, X_val, y_train, y_val = train_test_split(
+    )
+    
+    X_train, X_val, y_train, y_val = train_test_split(
     merged["user_text"],
     merged["intent"],
     test_size=0.2,
     random_state=42,
     stratify=stratify
-)
+    )
     classifier = Pipeline([
         ('tfidf', TfidfVectorizer(
             ngram_range=(1, 2),
