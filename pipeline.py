@@ -341,7 +341,6 @@ def load_data() -> pd.DataFrame:
             except Exception as e:
                 if len(sys.argv) <= 1: print(f"Error loading {sample_file}: {e}")
 
-    # Guaranteed multi-sample fallback
     if len(records) < 4:
         records = [
             {"user_text": "Where is my package? I want to track my delivery status online.", "company_response": "We would be happy to help! You can track your package and view your delivery status here: https://t.co/eVyTqezdQ0", "intent": "SHIPPING"},
@@ -464,6 +463,7 @@ def validate_ml_output(text: str, confidence_threshold: float = 0.60, margin_thr
         confidence < confidence_threshold
         or margin < margin_threshold
     )
+    
     return {
         "intent": predicted_intent,
         "confidence": confidence,
@@ -477,7 +477,6 @@ def validate_ml_output(text: str, confidence_threshold: float = 0.60, margin_thr
             for cls, prob in zip(cls_list, probabilities)
         }
     }
-   
 
 # =====================================================================
 # 5. RAG RETRIEVER & RETRIEVAL VALIDATION
