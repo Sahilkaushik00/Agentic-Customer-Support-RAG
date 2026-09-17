@@ -197,22 +197,57 @@ elif menu == "📊 Golden Benchmark Explorer (200)":
 
     df_golden = pd.DataFrame(golden_data)
 
+    # fcol1, fcol2, fcol3 = st.columns(3)
+    # with fcol1:
+    #     intent_filter = st.selectbox("Filter Intent:", ["ALL"] + list(df_golden["true_intent"].unique()))
+    # with fcol2:
+    #     complexity_filter = st.selectbox("Filter Complexity:", ["ALL"] + list(df_golden["complexity"].unique()))
+    # with fcol3:
+    #     hitl_filter = st.selectbox("Requires HITL:", ["ALL", "True", "False"])
+
+    # filtered_df = df_golden.copy()
+    # if intent_filter != "ALL":
+    #     filtered_df = filtered_df[filtered_df["true_intent"] == intent_filter]
+    # if complexity_filter != "ALL":
+    #     filtered_df = filtered_df[filtered_df["complexity"] == complexity_filter]
+    # if hitl_filter != "ALL":
+    #     val = (hitl_filter == "True")
+    #     filtered_df = filtered_df[filtered_df["requires_hitl"] == val]
+
+    # 1. Safe filter options (check if column exists before calling .unique())
+    intent_options = ["ALL"] + (list(df_golden["true_intent"].dropna().unique()) if "true_intent" in df_golden.columns else (list(df_golden["intent"].dropna().unique()) if "intent" in df_golden.columns else []))
+    complexity_options = ["ALL"] + (list(df_golden["complexity"].dropna().unique()) if "complexity" in df_golden.columns else [])
+    
     fcol1, fcol2, fcol3 = st.columns(3)
     with fcol1:
-        intent_filter = st.selectbox("Filter Intent:", ["ALL"] + list(df_golden["true_intent"].unique()))
+        intent_filter = st.selectbox("Filter Intent:", intent_options)
     with fcol2:
-        complexity_filter = st.selectbox("Filter Complexity:", ["ALL"] + list(df_golden["complexity"].unique()))
+        complexity_filter = st.selectbox("Filter Complexity:", complexity_options)
     with fcol3:
         hitl_filter = st.selectbox("Requires HITL:", ["ALL", "True", "False"])
 
     filtered_df = df_golden.copy()
+
+    # 2. Safe intent filtering
     if intent_filter != "ALL":
-        filtered_df = filtered_df[filtered_df["true_intent"] == intent_filter]
-    if complexity_filter != "ALL":
+        col_to_filter = "true_intent" if "true_intent" in filtered_df.columns else "intent"
+        if col_to_filter in filtered_df.columns:
+            filtered_df = filtered_df[filtered_df[col_to_filter] == intent_filter]
+
+    # 3. Safe complexity filtering
+    if complexity_filter != "ALL" and "complexity" in filtered_df.columns:
         filtered_df = filtered_df[filtered_df["complexity"] == complexity_filter]
+
+    # 4. Safe HITL filtering (handles both boolean True/False and string "true"/"false")
     if hitl_filter != "ALL":
-        val = (hitl_filter == "True")
-        filtered_df = filtered_df[filtered_df["requires_hitl"] == val]
+        target_col = "requires_hitl" if "requires_hitl" in filtered_df.columns else ("is_hitl" if "is_hitl" in filtered_df.columns else None)
+        if target_col:
+            val_bool = (hitl_filter == "True")
+            # Matches True/False as boolean, or "True"/"False" as text
+            filtered_df = filtered_df[
+                (filtered_df[target_col] == val_bool) | 
+                (filtered_df[target_col].astype(str).str.lower() == hitl_filter.lower())
+            ]
 
     st.write(f"Displaying **{len(filtered_df)}** of 200 items:")
     st.dataframe(
