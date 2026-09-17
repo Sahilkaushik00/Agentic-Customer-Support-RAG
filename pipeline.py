@@ -402,20 +402,23 @@ if SKLEARN_AVAILABLE:
         stratify=merged['intent'] if can_stratify else None
     )
 
+   from sklearn.linear_model import LogisticRegression
+
     classifier = Pipeline([
         ('tfidf', TfidfVectorizer(
             ngram_range=(1, 2),
-            max_features=5000,
-            min_df=1,
+            max_features=10000,
             token_pattern=r"(?u)\b\w+\b",
             sublinear_tf=True
         )),
         ('clf', LogisticRegression(
             max_iter=1000,
-            class_weight='balanced'
+            class_weight='balanced',
+            C=1.5,
+            solver='lbfgs',
+            random_state=42
         ))
-    ])
-    try:
+    ])    try:
         classifier.fit(X_train, y_train)
     except Exception as e:
         if len(sys.argv) <= 1: print(f"Classifier fitting fallback triggered: {e}")
