@@ -402,7 +402,7 @@ if SKLEARN_AVAILABLE:
         stratify=merged['intent'] if can_stratify else None
     )
 
-   from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression
 
     classifier = Pipeline([
         ('tfidf', TfidfVectorizer(
@@ -418,7 +418,8 @@ if SKLEARN_AVAILABLE:
             solver='lbfgs',
             random_state=42
         ))
-    ])    try:
+    ])    
+    try:
         classifier.fit(X_train, y_train)
     except Exception as e:
         if len(sys.argv) <= 1: print(f"Classifier fitting fallback triggered: {e}")
