@@ -257,7 +257,7 @@ elif menu == "📊 Golden Benchmark Explorer (200)":
         #     "gold_action", "historical_response", "company_response",
         # ]
         # Keep only the columns that actually exist in the loaded JSON
-        existing_columns = [col for col in desired_columns if col in filtered_df.columns]
+        existing_columns = [col for col in desired_columns if col in filtered_df.columns],
         
        # First define the columns safely outside the function call
     safe_columns = [
@@ -268,7 +268,7 @@ elif menu == "📊 Golden Benchmark Explorer (200)":
     ]
 
     # Then pass the safe columns to st.dataframe
-    st.dataframe(
+    ,st.dataframe(
         filtered_df[safe_columns],
         use_container_width=True,
         height=450
